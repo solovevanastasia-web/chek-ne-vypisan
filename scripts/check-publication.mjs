@@ -3,6 +3,8 @@ import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 
 const root = fileURLToPath(new URL('../', import.meta.url));
+const repository = execFileSync('git', ['rev-parse','--show-toplevel'], {cwd:root,encoding:'utf8'}).trim();
+if (repository !== root.replace(/\/$/,'')) throw new Error('Run the publication guard from this project repository, not a parent repository.');
 const files = execFileSync('git', ['ls-files', '-z'], { cwd: root, encoding: 'utf8' }).split('\0').filter(Boolean);
 const forbiddenPath = /(^|\/)(env|\.ssh|\.git)(\/|$)|(^|\/)\.env(?!\.example$)(?:\.|$)|(^|\/)(id_ed25519|id_rsa|deploy_key)(?:\.|$)|\.(?:pem|key|p12|pfx)$/i;
 const patterns = [

@@ -2,10 +2,14 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { execFileSync } from 'node:child_process';
+import { fileURLToPath } from 'node:url';
 
 test('publication guard passes and env is ignored', (t) => {
   const cwd = new URL('../', import.meta.url);
-  try { execFileSync('git',['rev-parse','--show-toplevel'],{cwd,stdio:'pipe'}); }
+  try {
+    const repository = execFileSync('git',['rev-parse','--show-toplevel'],{cwd,stdio:'pipe',encoding:'utf8'}).trim();
+    if (repository !== fileURLToPath(cwd).replace(/\/$/,'')) throw new Error('Archive inside a different repository');
+  }
   catch { t.skip('A source archive has no Git index; publication guard is run in the repository and CI.');return; }
   const output = execFileSync(process.execPath, ['scripts/check-publication.mjs'], { cwd, encoding: 'utf8' });
   assert.match(output, /PASS:/);
