@@ -34,3 +34,26 @@ jobs:
           node --check public/sw.js
       - name: Run tests with a local mock provider, without real keys
         run: node --test tests/*.test.mjs
+
+  container:
+    name: Docker build and server smoke test
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - name: Build the deployment image
+        run: docker build --tag chek-ne-vypisan:test .
+      - name: Start the server without any real API key
+        run: docker run --detach --name pitch-smoke --publish 127.0.0.1:3107:3000 chek-ne-vypisan:test
+      - name: Check health, private paths and non-root execution
+        run: |
+          curl --fail --silent --retry 15 --retry-connrefused --retry-delay 1 http://127.0.0.1:3107/api/health > health.json
+          node -e "const h=require('./health.json');if(h.ok!==true||h.configured!==false)process.exit(1)"
+          test "$(curl --silent --output /dev/null --write-out '%{http_code}' http://127.0.0.1:3107/env/.env)" = 404
+          test "$(curl --silent --output /dev/null --write-out '%{http_code}' http://127.0.0.1:3107/server/index.mjs)" = 404
+          test "$(docker exec pitch-smoke id -u)" != 0
+      - name: Stop the temporary test container
+        if: always()
+        run: docker rm --force pitch-smoke || true
