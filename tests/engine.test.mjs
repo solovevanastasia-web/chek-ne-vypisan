@@ -16,3 +16,11 @@ test('API key remains only in request authorization; failures use safe messages'
  process.env.GROQ_API_KEY='test-only-secret';process.env.LLM_API_KEY='test-only-secret';
  await assert.rejects(callModel('test',{},s,{fetchImpl:async(url,opts)=>{assert.equal(opts.headers.Authorization,'Bearer test-only-secret');assert.ok(!opts.body.includes('test-only-secret'));return {ok:false,status:429};}}),e=>e.status===429&&!e.message.includes('test-only-secret'));
 });
+test('temporary provider failure falls back once to the configured model',async()=>{
+ process.env.LLM_API_KEY='test-only-secret';process.env.LLM_MODEL='primary';process.env.LLM_FALLBACK_MODELS='backup';
+ const models=[];
+ try{
+  const value=await callModel('test',{},s,{fetchImpl:async(url,opts)=>{models.push(JSON.parse(opts.body).model);return models.length===1?{ok:false,status:503}:{ok:true,status:200,json:async()=>({choices:[{message:{content:'{"ok":true}'}}]})};}});
+  assert.deepEqual(models,['primary','backup']);assert.equal(value.ok,true);
+ }finally{delete process.env.LLM_FALLBACK_MODELS;delete process.env.LLM_MODEL;}
+});
