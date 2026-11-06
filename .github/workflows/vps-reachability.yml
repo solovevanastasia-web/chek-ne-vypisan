@@ -1,0 +1,20 @@
+name: VPS public reachability
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  public-http:
+    name: Check public VPS from an independent network
+    runs-on: ubuntu-latest
+    timeout-minutes: 2
+    steps:
+      - name: Check public health and private path protection
+        run: |
+          curl --noproxy '*' --fail --silent --show-error --connect-timeout 10 --max-time 20 http://78.17.128.92:3107/api/health > health.json
+          node -e "const h=require('./health.json');if(h.ok!==true||h.configured!==true)process.exit(1)"
+          test "$(curl --noproxy '*' --silent --output /dev/null --connect-timeout 10 --max-time 20 --write-out '%{http_code}' http://78.17.128.92:3107/env/.env)" = 404
+          printf 'Public HTTP health and private file protection passed.\n'
