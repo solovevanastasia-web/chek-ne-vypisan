@@ -3,8 +3,10 @@ import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { execFileSync } from 'node:child_process';
 
-test('publication guard passes and env is ignored', () => {
+test('publication guard passes and env is ignored', (t) => {
   const cwd = new URL('../', import.meta.url);
+  try { execFileSync('git',['rev-parse','--show-toplevel'],{cwd,stdio:'pipe'}); }
+  catch { t.skip('A source archive has no Git index; publication guard is run in the repository and CI.');return; }
   const output = execFileSync(process.execPath, ['scripts/check-publication.mjs'], { cwd, encoding: 'utf8' });
   assert.match(output, /PASS:/);
   const ignored = execFileSync('git', ['check-ignore', 'env/.env', 'env/deploy_key', 'env/github/hosts.yml'], { cwd, encoding:'utf8' });
