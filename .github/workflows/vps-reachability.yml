@@ -1,4 +1,4 @@
-name: VPS public reachability
+name: Public tunnel reachability
 
 on:
   workflow_dispatch:
@@ -14,7 +14,7 @@ jobs:
     steps:
       - name: Check public health and private path protection
         run: |
-          curl --noproxy '*' --fail --silent --show-error --connect-timeout 10 --max-time 20 http://78.17.128.92:3107/api/health > health.json
+          curl --noproxy '*' --fail --silent --show-error --connect-timeout 10 --max-time 20 https://portfolio-principles-genre-features.trycloudflare.com/api/health > health.json
           node -e "const h=require('./health.json');if(h.ok!==true||h.configured!==true)process.exit(1)"
-          test "$(curl --noproxy '*' --silent --output /dev/null --connect-timeout 10 --max-time 20 --write-out '%{http_code}' http://78.17.128.92:3107/env/.env)" = 404
+          test "$(curl --noproxy '*' --silent --output /dev/null --connect-timeout 10 --max-time 20 --write-out '%{http_code}' https://portfolio-principles-genre-features.trycloudflare.com/env/.env)" = 404
           printf 'Public HTTP health and private file protection passed.\n'

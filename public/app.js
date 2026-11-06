@@ -23,7 +23,10 @@ async function api(route, data) {
   let r;
   try { r = await fetch(route, { method: data === undefined ? 'GET' : 'POST', headers: data === undefined ? {} : {'Content-Type':'application/json'}, body: data === undefined ? undefined : JSON.stringify(data), signal: AbortSignal.timeout(110000) }); }
   catch { throw new Error('Связь прервалась. Проверь интернет и повтори запрос.'); }
-  const result = await r.json();
+  let result;
+  try { result = await r.json(); }
+  catch { throw new Error('Сервер временно недоступен. Подожди немного и повтори запрос.'); }
+  if (!result || typeof result !== 'object') throw new Error('Не удалось прочитать ответ сервера. Повтори запрос.');
   if (!r.ok) throw new Error(result.error || 'Что-то пошло не так. Попробуй снова.');
   return result;
 }
