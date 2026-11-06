@@ -9,6 +9,7 @@ const files = execFileSync('git', ['ls-files', '-z'], { cwd: root, encoding: 'ut
 const forbiddenPath = /(^|\/)(env|\.ssh|\.git)(\/|$)|(^|\/)\.env(?!\.example$)(?:\.|$)|(^|\/)(id_ed25519|id_rsa|deploy_key)(?:\.|$)|\.(?:pem|key|p12|pfx)$/i;
 const patterns = [
   /gsk_[a-zA-Z0-9]{20,}/,
+  /AQ\.[a-zA-Z0-9_-]{25,}/,
   /gh[pousr]_[a-zA-Z0-9]{20,}/,
   /github_pat_[a-zA-Z0-9_]{20,}/,
   /sk-(?:proj-)?[a-zA-Z0-9_-]{24,}/,

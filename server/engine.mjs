@@ -103,12 +103,12 @@ export function validatePitch(pitch) {
 }
 
 export async function callModel(prompt, schema, session, { fetchImpl = fetch, maxTokens = 1400 } = {}) {
-  const apiKey = process.env.GROQ_API_KEY || process.env.LLM_API_KEY;
+  const apiKey = process.env.LLM_API_KEY || process.env.GROQ_API_KEY;
   if (!apiKey) throw new PublicError(503, 'Нейросеть ещё не подключена. Организатору нужно настроить API-ключ на сервере.');
   const response = await fetchImpl(`${(process.env.LLM_BASE_URL || 'https://api.groq.com/openai/v1').replace(/\/$/, '')}/chat/completions`, {
     method: 'POST', signal: AbortSignal.timeout(45000),
     headers: { Authorization: `Bearer ${apiKey}`, 'Content-Type': 'application/json' },
-    body: JSON.stringify({ model: process.env.LLM_MODEL || 'openai/gpt-oss-120b', temperature: 0.45, reasoning_effort: 'low', max_completion_tokens: maxTokens,
+    body: JSON.stringify({ model: process.env.LLM_MODEL || 'openai/gpt-oss-120b', temperature: 0.45, reasoning_effort: process.env.LLM_REASONING_EFFORT || 'low', max_completion_tokens: maxTokens,
       response_format: { type: 'json_schema', json_schema: { name: 'investor_response', strict: true, schema } },
       messages: [{ role: 'system', content: prompt }, { role: 'user', content: JSON.stringify({ pitch: session.pitch, days_until_defense: session.days, dialogue: session.answers }) }],
     }),

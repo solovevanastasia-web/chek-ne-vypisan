@@ -13,6 +13,6 @@ test('requires ten unique criteria, exact three actions, scores in range',()=>{l
 test('cannot score before five answers',async()=>{await assert.rejects(makeReport(s),e=>e.status===409);});
 test('invalid pitch asks for context before round, non-answer cannot abort later round',()=>{assert.equal(validateQuestion({valid:false,reason:'Добавь описание'},s).valid,false);assert.throws(()=>validateQuestion({valid:false,reason:'Нет'},{...s,answers:[{question,answer:'не знаю'}]}));});
 test('API key remains only in request authorization; failures use safe messages',async()=>{
- process.env.GROQ_API_KEY='test-only-secret';
+ process.env.GROQ_API_KEY='test-only-secret';process.env.LLM_API_KEY='test-only-secret';
  await assert.rejects(callModel('test',{},s,{fetchImpl:async(url,opts)=>{assert.equal(opts.headers.Authorization,'Bearer test-only-secret');assert.ok(!opts.body.includes('test-only-secret'));return {ok:false,status:429};}}),e=>e.status===429&&!e.message.includes('test-only-secret'));
 });

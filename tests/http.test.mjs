@@ -12,7 +12,7 @@ test('HTTP round: isolation, locks, replay, five answers, secrets and CSRF', asy
     res.writeHead(200,{'Content-Type':'application/json'});res.end(JSON.stringify({choices:[{message:{content:JSON.stringify(value)}}]}));
   });
   await new Promise(r=>provider.listen(0,'127.0.0.1',r));
-  process.env.NODE_ENV='test';process.env.GROQ_API_KEY='test-only';process.env.LLM_BASE_URL=`http://127.0.0.1:${provider.address().port}`;
+  process.env.NODE_ENV='test';process.env.GROQ_API_KEY='test-only';process.env.LLM_API_KEY='test-only';process.env.LLM_BASE_URL=`http://127.0.0.1:${provider.address().port}`;
   const {server}=await import('../server/index.mjs');
   await new Promise(r=>server.listen(0,'127.0.0.1',r));
   const base=`http://127.0.0.1:${server.address().port}`;
