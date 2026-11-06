@@ -49,11 +49,13 @@ jobs:
         run: docker run --detach --name pitch-smoke --publish 127.0.0.1:3107:3000 chek-ne-vypisan:test
       - name: Check health, private paths and non-root execution
         run: |
-          curl --fail --silent --retry 15 --retry-connrefused --retry-delay 1 http://127.0.0.1:3107/api/health > health.json
+          curl --fail --silent --show-error --retry 15 --retry-all-errors --retry-max-time 30 --retry-delay 1 http://127.0.0.1:3107/api/health > health.json
           node -e "const h=require('./health.json');if(h.ok!==true||h.configured!==false)process.exit(1)"
           test "$(curl --silent --output /dev/null --write-out '%{http_code}' http://127.0.0.1:3107/env/.env)" = 404
           test "$(curl --silent --output /dev/null --write-out '%{http_code}' http://127.0.0.1:3107/server/index.mjs)" = 404
           test "$(docker exec pitch-smoke id -u)" != 0
       - name: Stop the temporary test container
         if: always()
-        run: docker rm --force pitch-smoke || true
+        run: |
+          docker logs pitch-smoke || true
+          docker rm --force pitch-smoke || true
