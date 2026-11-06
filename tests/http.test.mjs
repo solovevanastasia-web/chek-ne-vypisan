@@ -3,11 +3,11 @@ import assert from 'node:assert/strict';
 import http from 'node:http';
 import { CRITERIA } from '../server/engine.mjs';
 test('HTTP round: isolation, locks, replay, five answers, secrets and CSRF', async () => {
-  let modelCalls=0;
+  let modelCalls=0, holdNext=false, markHeld, releaseHeld;
   const provider=http.createServer(async(req,res)=>{
     let b='';for await(const c of req)b+=c;
     const data=JSON.parse(b), s=JSON.parse(data.messages[1].content);modelCalls++;
-    await new Promise(r=>setTimeout(r,35));
+    if (holdNext) { holdNext=false; await new Promise(resolve=>{releaseHeld=resolve;markHeld();}); }
     const value=s.dialogue.length===5?{verdict:'Нужны доказательства.',strength:'Есть покупки.',criteria:CRITERIA.map(([id])=>({id,score:5,status:'self_reported',reason:'Есть заявление о покупке.',quote:'18 покупок.'})),advice:[1,2,3].map(i=>({action:'Проверь гипотезу '+i,why:'Не хватает расчёта.',time:'Сегодня',artifact:'Расчёт.'}))}:{valid:true,reason:'',question:`Как ты проверишь гипотезу номер ${s.dialogue.length+1}?`,quote:'18 покупок.',reaction:'Проверим аргумент.',target:data.response_format.json_schema.schema.properties.target.enum[0]};
     res.writeHead(200,{'Content-Type':'application/json'});res.end(JSON.stringify({choices:[{message:{content:JSON.stringify(value)}}]}));
   });
@@ -27,8 +27,13 @@ test('HTTP round: isolation, locks, replay, five answers, secrets and CSRF', asy
     for(const route of ['/env/.env','/.env','/server/index.mjs','/%2e%2e/env/.env']){const r=await fetch(base+route);assert.equal(r.status,404);assert.ok(!(await r.text()).includes('test-only'));}
     const stale=await post('/api/answer',{step:3,answer:'не знаю'},cookie);assert.equal(stale.status,409);
     const answerRequest={step:1,answer:'Не знаю',requestId:'one'};
+    holdNext=true;
+    const held=new Promise(resolve=>{markHeld=resolve;});
     const first=post('/api/answer',answerRequest,cookie);
-    const concurrent=await post('/api/answer',answerRequest,cookie);assert.equal(concurrent.status,409);
+    await held;
+    const concurrent=await post('/api/answer',answerRequest,cookie);
+    releaseHeld();
+    assert.equal(concurrent.status,409);
     assert.equal((await first).status,200);
     const count=modelCalls;const replay=await post('/api/answer',answerRequest,cookie);assert.equal(replay.status,200);assert.equal(modelCalls,count);
     let result;
