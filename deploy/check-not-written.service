@@ -1,0 +1,25 @@
+# Replace TEAM_USER, /home/TEAM_USER/check-not-written and /usr/bin/node before installation.
+[Unit]
+Description=Check Not Written - pitch trainer
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=TEAM_USER
+WorkingDirectory=/home/TEAM_USER/check-not-written
+ExecStart=/usr/bin/node server/index.mjs
+Environment=NODE_ENV=production
+Environment=HOST=127.0.0.1
+Environment=PORT=3107
+Environment=TRUST_PROXY=1
+Restart=on-failure
+RestartSec=3
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=strict
+ProtectHome=read-only
+ReadWritePaths=/home/TEAM_USER/check-not-written/env
+
+[Install]
+WantedBy=multi-user.target

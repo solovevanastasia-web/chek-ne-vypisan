@@ -1,0 +1,36 @@
+name: Project checks
+
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  verify:
+    name: Tests and secret guard (Node ${{ matrix.node }})
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    strategy:
+      fail-fast: false
+      matrix:
+        node: [22, 24]
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ matrix.node }}
+      - name: Verify no private files or credential values are tracked
+        run: node scripts/check-publication.mjs
+      - name: Check JavaScript syntax
+        run: |
+          node --check server/index.mjs
+          node --check server/engine.mjs
+          node --check public/app.js
+          node --check public/sw.js
+      - name: Run tests with a local mock provider, without real keys
+        run: node --test tests/*.test.mjs
