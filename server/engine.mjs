@@ -106,7 +106,7 @@ export async function callModel(prompt, schema, session, { fetchImpl = fetch, ma
   const apiKey = process.env.LLM_API_KEY || process.env.GROQ_API_KEY;
   if (!apiKey) throw new PublicError(503, 'Нейросеть ещё не подключена. Организатору нужно настроить API-ключ на сервере.');
   const request = (model) => fetchImpl(`${(process.env.LLM_BASE_URL || 'https://api.groq.com/openai/v1').replace(/\/$/, '')}/chat/completions`, {
-    method: 'POST', signal: AbortSignal.timeout(45000),
+    method: 'POST', signal: AbortSignal.timeout(20000),
     headers: { Authorization: `Bearer ${apiKey}`, 'Content-Type': 'application/json' },
     body: JSON.stringify({ model, temperature: 0.45, reasoning_effort: process.env.LLM_REASONING_EFFORT || 'low', max_completion_tokens: maxTokens,
       response_format: { type: 'json_schema', json_schema: { name: 'investor_response', strict: true, schema } },
@@ -114,9 +114,15 @@ export async function callModel(prompt, schema, session, { fetchImpl = fetch, ma
     }),
   });
   const primary = process.env.LLM_MODEL || 'openai/gpt-oss-120b';
-  let response = await request(primary);
   const fallback = (process.env.LLM_FALLBACK_MODELS || '').split(',').map(s=>s.trim()).find(s=>s && s!==primary);
-  if (fallback && [429,500,502,503,504].includes(response.status)) {
+  let response, usedFallback = false;
+  try { response = await request(primary); }
+  catch (error) {
+    if (!fallback || !['TimeoutError','TypeError'].includes(error.name)) throw error;
+    usedFallback = true;
+    response = await request(fallback);
+  }
+  if (fallback && !usedFallback && [429,500,502,503,504].includes(response.status)) {
     await response.body?.cancel();
     response = await request(fallback);
   }
